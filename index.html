@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Control de Ingresos y Egresos</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
+</head>
+<body>
+  <main class="app-shell">
+    <section class="panel">
+      <header class="panel-header main-header">
+        <div>
+          <p class="eyebrow">Control mensual</p>
+          <h1>Ingresos y egresos</h1>
+          <p class="subtitle">
+            Registra movimientos manualmente o importa un Excel bancario. La app resume tus ingresos,
+            egresos y saldo actual, y genera un informe PDF con el mismo estilo de la pantalla principal.
+          </p>
+        </div>
+        <div class="header-actions">
+          <button id="exportReportBtn" class="primary-btn">Exportar informe PDF</button>
+          <button id="exportBtn" class="secondary-btn">Exportar TXT</button>
+          <label class="file-label" for="importFile">Importar TXT</label>
+          <input type="file" id="importFile" accept=".txt,application/json" hidden />
+          <label class="file-label" for="excelInput">Importar Excel</label>
+          <input type="file" id="excelInput" accept=".xlsx,.xls" hidden />
+        </div>
+      </header>
+
+      <section class="summary-grid three-cols">
+        <article class="summary-card income">
+          <span>Ingresos actuales</span>
+          <strong id="incomeTotal">$ 0,00</strong>
+        </article>
+        <article class="summary-card expense">
+          <span>Egresos actuales</span>
+          <strong id="expenseTotal">$ 0,00</strong>
+        </article>
+        <article class="summary-card balance">
+          <span>Saldo actual</span>
+          <strong id="balanceTotal">$ 0,00</strong>
+        </article>
+      </section>
+
+      <section class="content-grid top-grid single-right">
+        <div class="form-card">
+          <div class="section-title-row">
+            <div>
+              <h2>Carga manual</h2>
+              <p class="subtitle small">Solo campos básicos para registrar movimientos.</p>
+            </div>
+          </div>
+
+          <form id="financeForm" class="finance-form">
+            <div class="field-row">
+              <div class="field">
+                <label for="type">Tipo</label>
+                <select id="type" required>
+                  <option value="ingreso">Ingreso</option>
+                  <option value="egreso" selected>Egreso</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="amount">Monto</label>
+                <input type="number" id="amount" min="0" step="0.01" placeholder="Ej: 150000" required />
+              </div>
+            </div>
+
+            <div class="field-row">
+              <div class="field">
+                <label for="category">Categoría</label>
+                <select id="category" required>
+                  <option value="Sueldo">Sueldo</option>
+                  <option value="Comida">Comida</option>
+                  <option value="Hogar">Hogar</option>
+                  <option value="Transporte">Transporte</option>
+                  <option value="Servicios">Servicios</option>
+                  <option value="Salud">Salud</option>
+                  <option value="Streaming">Streaming</option>
+                  <option value="Compras">Compras</option>
+                  <option value="Transferencias">Transferencias</option>
+                  <option value="Tarjeta / Pago">Tarjeta / Pago</option>
+                  <option value="Otros" selected>Otros</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="date">Fecha</label>
+                <input type="date" id="date" required />
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="description">Descripción</label>
+              <input type="text" id="description" maxlength="120" placeholder="Detalle del movimiento" required />
+            </div>
+
+            <div class="button-row">
+              <button type="submit" class="primary-btn">Guardar movimiento</button>
+              <button type="button" id="clearAllBtn" class="danger-btn">Limpiar todo</button>
+            </div>
+          </form>
+
+          <div class="storage-box compact-box">
+            <h3>Importación de Excel</h3>
+            <p>
+              Se procesan únicamente movimientos en <strong>ARS</strong>. Los montos positivos se toman como
+              <strong>egresos</strong> y los negativos como <strong>ingresos, pagos o reintegros</strong>.
+            </p>
+          </div>
+        </div>
+
+        <div class="chart-card large-chart-card">
+          <div class="table-header">
+            <div>
+              <h2>Resumen visual</h2>
+              <p class="subtitle small">Gráfico único de torta sobre la distribución actual.</p>
+            </div>
+          </div>
+          <div class="chart-wrap">
+            <canvas id="financeChart"></canvas>
+          </div>
+        </div>
+      </section>
+
+      <section class="table-card">
+        <div class="table-header">
+          <div>
+            <h2>Movimientos registrados</h2>
+            <p id="recordsInfo" class="subtitle small">0 movimientos</p>
+          </div>
+        </div>
+
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Tipo</th>
+                <th>Categoría</th>
+                <th>Descripción</th>
+                <th>Monto</th>
+                <th>Origen</th>
+                <th>Acción</th>
+              </tr>
+            </thead>
+            <tbody id="recordsTableBody"></tbody>
+          </table>
+          <div id="emptyState" class="empty-state">Todavía no hay movimientos cargados.</div>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>
